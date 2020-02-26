@@ -1,5 +1,7 @@
 import pygame
 import text_input
+import io
+from request_image import load_map
 
 pygame.init()
 size = width, height = 700, 500
@@ -9,11 +11,14 @@ FPS = 80
 
 class Map:
     def __init__(self):
-        pass
+        self.scale = 2
+        self.center = [58, -50]
+        self.render()
 
     def render(self):
         pygame.draw.line(screen, pygame.Color("red"), (480, 0), (480, 500), 5)
         pygame.draw.line(screen, pygame.Color("red"), (0, 45), (700, 45), 5)
+        self.image = pygame.image.load(io.BytesIO(load_map([str(self.center[0]), str(self.center[1])], self.scale)))
 
 
 
@@ -24,6 +29,7 @@ text_input = text_input.TextInput()
 
 clock = pygame.time.Clock()
 running = True
+pygame.key.set_repeat(30)
 
 while running:
     clock.tick(FPS)
@@ -31,22 +37,29 @@ while running:
     for event in events:
         if event.type == pygame.QUIT:
             running = False
-        # if event.type == pygame.KEYDOWN:
-        # if event.key == pygame.K_PAGEDOWN:
-        #     scale -= 1
-        # elif event.key == pygame.K_PAGEUP:
-        #     scale += 1
-        # elif event.key == pygame.K_DOWN:
-        # elif event.key == pygame.K_UP:
-        # elif event.key == pygame.K_LEFT:
-        # elif event.key == pygame.K_RIGHT:
-
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_PAGEDOWN:
+                cur_map.scale -= 1
+            elif event.key == pygame.K_PAGEUP:
+                cur_map.scale += 1
+            elif event.key == pygame.K_DOWN:
+                cur_map.center[1] -= cur_map.scale
+            elif event.key == pygame.K_UP:
+                cur_map.center[1] += cur_map.scale
+            elif event.key == pygame.K_LEFT:
+                cur_map.center[0] -= cur_map.scale
+            elif event.key == pygame.K_RIGHT:
+                cur_map.center[0] += cur_map.scale
+    cur_map.scale %= 23
+    cur_map.center[0] %= 180
+    cur_map.center[1] %= 90
     screen.fill(pygame.Color('white'))
+    screen.blit(cur_map.image, (10, 50))
 
     # Feed it with events every frame
-    text_input.update(events)
+    # text_input.update(events)
     # Blit its surface onto the screen
-    screen.blit(text_input.get_surface(), (10, 10))
+    # screen.blit(text_input.get_surface(), (10, 10))
     # pygame.display.flip()
     cur_map.render()
 

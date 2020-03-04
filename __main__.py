@@ -29,7 +29,7 @@ text_input = text_input.TextInput()
 
 clock = pygame.time.Clock()
 running = True
-pygame.key.set_repeat(30)
+pygame.key.set_repeat(10)
 
 while running:
     clock.tick(FPS)
@@ -38,19 +38,21 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.KEYDOWN:
+            scale = 0.1 ** (cur_map.scale // 4) * (17 - cur_map.scale + 3)
             if event.key == pygame.K_PAGEDOWN:
-                cur_map.scale -= 1
+                if cur_map.scale > 0:
+                    cur_map.scale -= 1
             elif event.key == pygame.K_PAGEUP:
-                cur_map.scale += 1
+                if cur_map.scale < 17:
+                    cur_map.scale += 1
             elif event.key == pygame.K_DOWN:
-                cur_map.center[1] -= cur_map.scale
+                cur_map.center[1] -= scale
             elif event.key == pygame.K_UP:
-                cur_map.center[1] += cur_map.scale
+                cur_map.center[1] += scale
             elif event.key == pygame.K_LEFT:
-                cur_map.center[0] -= cur_map.scale
+                cur_map.center[0] -= scale
             elif event.key == pygame.K_RIGHT:
-                cur_map.center[0] += cur_map.scale
-    cur_map.scale %= 23
+                cur_map.center[0] += scale
     cur_map.center[0] %= 180
     cur_map.center[1] %= 90
     screen.fill(pygame.Color('white'))

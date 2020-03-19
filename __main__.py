@@ -54,8 +54,6 @@ while running:
                 cur_map.center[0] -= scale
             elif event.key == pygame.K_RIGHT:
                 cur_map.center[0] += scale
-    screen.fill(pygame.Color('white'))
-    screen.blit(cur_map.image, (10, 50))
 
     if cur_map.center[0] > 180:
         cur_map.center[0] -= 360
@@ -69,7 +67,9 @@ while running:
         if cur_map.center[1] < -SCALES[cur_map.scale]:
             cur_map.center[1] = -SCALES[cur_map.scale]
 
+    screen.fill(pygame.Color('white'))
     cur_map.render()
+    screen.blit(cur_map.image, (10, 50))
     pygame.display.update()
 
 pygame.quit()

@@ -13,7 +13,7 @@ def get_map(params):
 def load_map(coordinates, scale):
     map_params = {
         "ll": ",".join(coordinates),
-        "size": "450,450",
+        "size": "650,450",
         "z": str(scale),
         "l": "map"
     }

@@ -2,6 +2,7 @@ import pygame
 import text_input
 import io
 from request_image import load_map
+from math import cos, radians
 
 pygame.init()
 size = width, height = 700, 500
@@ -31,6 +32,7 @@ text_input = text_input.TextInput()
 clock = pygame.time.Clock()
 running = True
 pygame.key.set_repeat(10)
+pressed = False
 
 while running:
     clock.tick(FPS)
@@ -47,13 +49,28 @@ while running:
                 if cur_map.scale < 17:
                     cur_map.scale += 1
             elif event.key == pygame.K_DOWN:
-                cur_map.center[1] -= scale
+                cur_map.center[1] -= scale * cos(radians(cur_map.center[1]))
             elif event.key == pygame.K_UP:
-                cur_map.center[1] += scale
+                cur_map.center[1] += scale * cos(radians(cur_map.center[1]))
             elif event.key == pygame.K_LEFT:
                 cur_map.center[0] -= scale
             elif event.key == pygame.K_RIGHT:
                 cur_map.center[0] += scale
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == pygame.BUTTON_LEFT:
+                pressed = True
+                start_pos = event.pos
+            if event.button == pygame.BUTTON_WHEELUP:
+                cur_map.scale += 1
+            if event.button == pygame.BUTTON_WHEELDOWN:
+                cur_map.scale -= 1
+        if event.type == pygame.MOUSEMOTION and pressed:
+            cur_map.center[0] += 0.02 * 18 / 2 ** (cur_map.scale - 2) * (start_pos[0] - event.pos[0])
+            cur_map.center[1] -= cos(radians(cur_map.center[1])) * 0.02 * 18 / 2 ** \
+                                 (cur_map.scale - 2) * (start_pos[1] - event.pos[1])
+            start_pos = event.pos
+        if event.type == pygame.MOUSEBUTTONUP:
+            pressed = False
 
     if cur_map.center[0] > 180:
         cur_map.center[0] -= 360

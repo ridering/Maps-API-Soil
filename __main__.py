@@ -85,9 +85,11 @@ while running:
                     pressed = True
                     start_pos = event.pos
             if event.button == pygame.BUTTON_WHEELUP:
-                cur_map.scale += 1
+                if cur_map.scale < 17:
+                    cur_map.scale += 1
             if event.button == pygame.BUTTON_WHEELDOWN:
-                cur_map.scale -= 1
+                if cur_map.scale > 1:
+                    cur_map.scale -= 1
         if event.type == pygame.MOUSEMOTION and pressed:
             cur_map.center[0] += 0.02 * 18 / 2 ** (cur_map.scale - 2) * (start_pos[0] - event.pos[0])
             cur_map.center[1] -= cos(radians(cur_map.center[1])) * 0.02 * 18 / 2 ** \

@@ -13,11 +13,14 @@ def get_toponym(search):
     response = requests.get(geocoder_api_server, params=geocoder_params)
 
     if not response:
-        raise RuntimeError('Error on sending Geocode Request')
+        # raise RuntimeError('Error on sending Geocode Request')
+        return None
 
-    json_response = response.json()
-    return json_response["response"]["GeoObjectCollection"][
-        "featureMember"][0]["GeoObject"]
+    try:
+        json_response = response.json()
+        return json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
+    except Exception:
+        return None
 
 
 def get_coordinates(toponym):

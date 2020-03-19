@@ -17,12 +17,15 @@ class Map:
     def __init__(self):
         self.scale = 2
         self.center = [56.188484, 58.007144]
+        self.map_type = 'map'
         self.render()
 
     def render(self):
         pygame.draw.line(screen, pygame.Color("red"), (0, 45), (700, 45), 5)
         self.image = pygame.image.load(
-            io.BytesIO(load_map([str(self.center[0]), str(self.center[1])], self.scale)))
+            io.BytesIO(load_map([str(self.center[0]), str(self.center[1])],
+                                self.scale,
+                                self.map_type)))
 
 
 cur_map = Map()
@@ -33,6 +36,19 @@ clock = pygame.time.Clock()
 running = True
 pygame.key.set_repeat(10)
 pressed = False
+
+
+def make_labels(text_text, color):
+    font = pygame.font.Font(None, 30)
+    text = font.render("{}".format(text_text), 1, pygame.Color(color))
+    screen.fill(pygame.Color('white'))
+    screen.blit(text, (0, 0))
+    return pygame.transform.rotate(screen.subsurface((0, 0, 80, 30)).copy(), 270)
+
+
+scheme = make_labels('Схема', 'red')
+sputnik = make_labels('Спутник', 'blue')
+hybrid = make_labels('Гибрид', 'green')
 
 while running:
     clock.tick(FPS)
@@ -58,8 +74,16 @@ while running:
                 cur_map.center[0] += scale
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
-                pressed = True
-                start_pos = event.pos
+                if event.pos[0] in range(650, 680):
+                    if event.pos[1] in range(130, 210):
+                        cur_map.map_type = 'map'
+                    elif event.pos[1] in range(235, 315):
+                        cur_map.map_type = 'sat'
+                    elif event.pos[1] in range(370, 450):
+                        cur_map.map_type = 'sat,skl'
+                else:
+                    pressed = True
+                    start_pos = event.pos
             if event.button == pygame.BUTTON_WHEELUP:
                 cur_map.scale += 1
             if event.button == pygame.BUTTON_WHEELDOWN:
@@ -86,7 +110,10 @@ while running:
 
     screen.fill(pygame.Color('white'))
     cur_map.render()
-    screen.blit(cur_map.image, (10, 50))
+    screen.blit(cur_map.image, (0, 50))
+    screen.blit(scheme, (650, 110))
+    screen.blit(sputnik, (650, 235))
+    screen.blit(hybrid, (650, 370))
     pygame.display.update()
 
 pygame.quit()

@@ -10,12 +10,12 @@ def get_map(params):
     return response.content
 
 
-def load_map(coordinates, scale):
+def load_map(coordinates, scale, map_type):
     map_params = {
         "ll": ",".join(coordinates),
         "size": "650,450",
         "z": str(scale),
-        "l": "map"
+        "l": map_type
     }
 
     return get_map(map_params)

@@ -16,6 +16,7 @@ clock = pygame.time.Clock()
 running = True
 pressed = False
 buttons = pygame.sprite.Group()
+labels = pygame.sprite.Group()
 
 
 class Map:
@@ -24,6 +25,7 @@ class Map:
         self.center = [56.188484, 58.007144]
         self.map_type = 'map'
         self.pt = None
+        self.address = None
         self.render()
 
     def render(self):
@@ -37,15 +39,22 @@ class Map:
     def search(self, request):
         result = get_toponym(request)
         if result:
+            self.show_address(result)
             result = get_coordinates(result)
             self.center = [float(result[0]), float(result[1])]
             self.pt = self.center.copy()
 
+    def show_address(self, result):
+        self.address = result['metaDataProperty']['GeocoderMetaData']['text']
 
-class Button(pygame.sprite.Sprite):
-    def __init__(self, text_text, color, x, y, bg_color='white', angle=0, font_size=30):
-        super().__init__(buttons)
 
+class Label(pygame.sprite.Sprite):
+    def __init__(self, text_text, color, x, y, group=labels, angle=0, font_size=30):
+        super().__init__(group)
+        self.default(text_text, x, y, angle, font_size)
+        self.make_text(self.text, color, 'white')
+
+    def default(self, text_text, x, y, angle, font_size):
         self.width, self.height = self.get_size(text_text, font_size)
         if angle == 270:
             self.rect = pygame.Rect(x, y, self.height, self.width)
@@ -53,18 +62,39 @@ class Button(pygame.sprite.Sprite):
             self.rect = pygame.Rect(x, y, self.width, self.height)
         self.rect.x = x
         self.rect.y = y
-
-        self.static = self.make_button(text_text, color, bg_color, angle, self.width, self.height)
-        self.active = self.make_button(text_text, color, 'yellow', angle, self.width, self.height)
-        self.image = self.static
-
         self.text = text_text.strip()
 
     def get_size(self, text_text, font_size):
         self.font = pygame.font.Font('font.ttf', font_size)
         return pygame.font.Font.size(self.font, text_text)
 
-    def make_button(self, text_text, color, bg_color, angle, but_width, but_height):
+    def make_text(self, text, color, bg_color):
+        words = text.split()
+        space = self.font.size(' ')[0]
+        max_width = 200
+        screen.fill(pygame.Color(bg_color))
+        x, y = 0, 0
+        for word in words:
+            word_surface = self.font.render(word, 1, pygame.color.Color(color))
+            word_width, word_height = word_surface.get_size()
+            if x + word_width >= max_width:
+                x = 0
+                y += word_height
+            screen.blit(word_surface, (x, y))
+            x += word_width + space
+        self.image = screen.subsurface((0, 0, 200, y + 31)).copy()
+
+
+class Button(Label):
+    def __init__(self, text_text, color, x, y, bg_color='white', angle=0, font_size=30):
+        super().__init__(text_text, color, x, y, group=buttons)
+        self.default(text_text, x, y, angle, font_size)
+
+        self.static = self.make_image(text_text, color, bg_color, angle, self.width, self.height)
+        self.active = self.make_image(text_text, color, 'yellow', angle, self.width, self.height)
+        self.image = self.static
+
+    def make_image(self, text_text, color, bg_color, angle, but_width, but_height):
         text = self.font.render("{}".format(text_text), 1, pygame.Color(color))
         screen.fill(pygame.Color(bg_color))
         screen.blit(text, (0, 0))
@@ -74,6 +104,7 @@ class Button(pygame.sprite.Sprite):
 
 
 cur_map = Map()
+result = Label('', 'black', 10, 60)
 scheme = Button('  Схема  ', 'red', width - 50, height - 390, angle=270)
 sputnik = Button('  Спутник  ', 'blue', width - 50, height - 265, angle=270)
 hybrid = Button('  Гибрид  ', 'green', width - 50, height - 130, angle=270)
@@ -87,6 +118,7 @@ def make_action(button):
     if button == 'Искать':
         cur_map.search(text_input.get_text())
         search.image = search.active
+        result.make_text(cur_map.address, 'black', 'white')
     if button == 'Схема':
         cur_map.map_type = 'map'
         scheme.image = scheme.active
@@ -99,6 +131,7 @@ def make_action(button):
     if button == 'Сброс поискового результата':
         cancel.image = cancel.active
         cur_map.pt = None
+        cur_map.address = None
 
 
 while running:
@@ -128,6 +161,7 @@ while running:
                 cur_map.center[0] += scale
             if event.key == pygame.K_KP_ENTER:
                 cur_map.search(text_input.get_text())
+                result.make_text(cur_map.address, 'black', 'white')
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
@@ -173,6 +207,10 @@ while running:
     screen.blit(text_input.get_surface(), (10, 10))
     buttons.draw(screen)
     buttons.update()
+    if cur_map.address:
+        # pygame.draw.rect(screen, pygame.color.Color('white'), (10, 60, 200, 430))
+        labels.draw(screen)
+        labels.update()
 
     pygame.display.update()
 

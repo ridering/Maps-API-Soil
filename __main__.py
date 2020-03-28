@@ -1,9 +1,11 @@
-import pygame
-import text_input
 import io
-from request_image import load_map
-from request_coordinate import get_coordinates, get_toponym
 from math import cos, radians
+
+import pygame
+
+import text_input
+from request_coordinate import get_coordinates, get_toponym
+from request_image import load_map
 
 pygame.init()
 size = width, height = 700, 500
@@ -22,6 +24,7 @@ labels = pygame.sprite.Group()
 class Map:
     def __init__(self):
         self.scale = 2
+        self.postal_code = ''
         self.center = [56.188484, 58.007144]
         self.map_type = 'map'
         self.pt = None
@@ -46,6 +49,10 @@ class Map:
 
     def show_address(self, result):
         self.address = result['metaDataProperty']['GeocoderMetaData']['text']
+        if 'postal_code' in result['metaDataProperty']['GeocoderMetaData']['Address']:
+            self.postal_code = result['metaDataProperty']['GeocoderMetaData']['Address']['postal_code']
+        else:
+            self.postal_code = ''
 
 
 class Label(pygame.sprite.Sprite):
@@ -89,7 +96,7 @@ class Button(Label):
     def __init__(self, text_text, color, x, y, bg_color='white', angle=0, font_size=30):
         super().__init__(text_text, color, x, y, group=buttons)
         self.default(text_text, x, y, angle, font_size)
-
+        self.p = False
         self.static = self.make_image(text_text, color, bg_color, angle, self.width, self.height)
         self.active = self.make_image(text_text, color, 'yellow', angle, self.width, self.height)
         self.image = self.static
@@ -109,6 +116,8 @@ scheme = Button('  Схема  ', 'red', width - 50, height - 390, angle=270)
 sputnik = Button('  Спутник  ', 'blue', width - 50, height - 265, angle=270)
 hybrid = Button('  Гибрид  ', 'green', width - 50, height - 130, angle=270)
 search = Button('  Искать  ', 'black', width - 90, 5)
+post = Button('  Почтовый индекс  ', 'black', width - 470, 50)
+
 cancel = Button('  Сброс поискового результата  ', 'black', width - 287, 50)
 text_input = text_input.TextInput(font_family='font.ttf', font_size=30,
                                   repeat_keys_initial_ms=400, repeat_keys_interval_ms=30)
@@ -118,7 +127,17 @@ def make_action(button):
     if button == 'Искать':
         cur_map.search(text_input.get_text())
         search.image = search.active
-        result.make_text(cur_map.address, 'black', 'white')
+        result.make_text(cur_map.address + cur_map.postal_code, 'black', 'white')
+    if button == 'Почтовый индекс':
+        print(post.p)
+        if post.p:
+            post.p = False
+            result.make_text(cur_map.address, 'black', 'white')
+            post.image = post.active
+        else:
+            result.make_text(cur_map.address + ' ' + cur_map.postal_code, 'black', 'white')
+            post.image = post.active
+            post.p = True
     if button == 'Схема':
         cur_map.map_type = 'map'
         scheme.image = scheme.active
@@ -132,6 +151,7 @@ def make_action(button):
         cancel.image = cancel.active
         cur_map.pt = None
         cur_map.address = None
+        cur_map.postal_code = ''
 
 
 while running:

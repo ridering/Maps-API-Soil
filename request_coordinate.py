@@ -1,6 +1,25 @@
 import requests
 
 
+def get_organization(pos):
+    geosearch_api_server = 'https://search-maps.yandex.ru/v1/'
+    params = {
+        'apikey': 'dda3ddba-c9ea-4ead-9010-f43fbc15c6e3',
+        'll': ','.join(pos),
+        'text': 'а',
+        'lang': 'ru_RU',
+        'type': 'biz'
+    }
+    response = requests.get(geosearch_api_server, params=params)
+    if not response:
+        raise RuntimeError
+    return response.json()['features'][0]
+
+
+def get_org_pos(org):
+    return org['geometry']['coordinates']
+
+
 def get_toponym(search):
     geocoder_api_server = "http://geocode-maps.yandex.ru/1.x/"
 

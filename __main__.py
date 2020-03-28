@@ -3,7 +3,8 @@ from math import cos, radians
 import pygame
 
 import text_input
-from request_coordinate import get_toponym
+from distance import lonlat_distance
+from request_coordinate import get_toponym, get_org_pos, get_organization
 
 pygame.init()
 size = width, height = 700, 500
@@ -67,11 +68,7 @@ def make_action(button):
 
 
 def new_coor(pos):
-    pix_x = pos[0] - 650 / 2
-    pix_y = pos[1] - 50 - 450 / 2
-    x = cur_map.center[0] + pix_x * scale_x / 650
-    y = cur_map.center[1] - pix_y * scale_y / 450 * cos(radians(cur_map.center[1]))
-    cur_map.search(text_input.get_text())
+    x, y = pix_to_rad(pos)
     cur_map.pt = [x, y]
     top = get_toponym(str(x) + ',' + str(y))
     if top:
@@ -80,7 +77,6 @@ def new_coor(pos):
         result.make_text(cur_map.address, 'black', 'white')
     else:
         result.make_text(cur_map.address + ' ' + cur_map.postal_code, 'black', 'white')
-    cur_map.render()
 
 
 def check_coor():
@@ -95,6 +91,31 @@ def check_coor():
     else:
         if cur_map.center[1] < -SCALES[cur_map.scale]:
             cur_map.center[1] = -SCALES[cur_map.scale]
+
+
+def pix_to_rad(pos):
+    pix_x = pos[0] - 650 / 2
+    pix_y = pos[1] - 50 - 450 / 2
+    x = cur_map.center[0] + pix_x * scale_x / 650
+    y = cur_map.center[1] - pix_y * scale_y / 450 * cos(radians(cur_map.center[1]))
+    return x, y
+
+
+def find_org(pos):
+    x, y = pix_to_rad(pos)
+    org = get_organization((str(x), str(y)))
+    org_x, org_y = get_org_pos(org)
+    distance = lonlat_distance((x, y), (org_x, org_y))
+    if distance <= 50:
+        cur_map.pt = [org_x, org_y]
+        top = get_toponym(str(org_x) + ',' + str(org_y))
+        if top:
+            cur_map.show_address(top)
+        if post.p:
+            result.make_text(org['properties']['name'] + ' ' + cur_map.address, 'black', 'white')
+        else:
+            result.make_text(org['properties']['name'] + ' ' + cur_map.address + ' ' + cur_map.postal_code, 'black',
+                             'white')
 
 
 while running:
@@ -138,6 +159,9 @@ while running:
                 start_pos = event.pos
                 if not flag and event.pos[0] < 650 and event.pos[1] > 50:
                     new_coor(event.pos)
+            if event.button == pygame.BUTTON_RIGHT:
+                if event.pos[0] < 650 and event.pos[1] > 50:
+                    find_org(event.pos)
 
             if event.button == pygame.BUTTON_WHEELUP:
                 if cur_map.scale < 17:

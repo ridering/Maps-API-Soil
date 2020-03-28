@@ -1,12 +1,12 @@
 import requests
 
 
-def get_organization(pos):
+def get_organization(pos, search):
     geosearch_api_server = 'https://search-maps.yandex.ru/v1/'
     params = {
         'apikey': 'dda3ddba-c9ea-4ead-9010-f43fbc15c6e3',
         'll': ','.join(pos),
-        'text': 'а',
+        'text': search,
         'lang': 'ru_RU',
         'type': 'biz'
     }

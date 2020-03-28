@@ -1,11 +1,9 @@
-import io
 from math import cos, radians
 
 import pygame
 
 import text_input
-from request_coordinate import get_coordinates, get_toponym
-from request_image import load_map
+from request_coordinate import get_toponym
 
 pygame.init()
 size = width, height = 700, 500
@@ -20,102 +18,16 @@ pressed = False
 buttons = pygame.sprite.Group()
 labels = pygame.sprite.Group()
 
-
-class Map:
-    def __init__(self):
-        self.scale = 2
-        self.postal_code = ''
-        self.center = [56.188484, 58.007144]
-        self.map_type = 'map'
-        self.pt = None
-        self.address = None
-        self.render()
-
-    def render(self):
-        pygame.draw.line(screen, pygame.Color("red"), (0, 45), (width, 45), 5)
-        self.image = pygame.image.load(
-            io.BytesIO(load_map([str(self.center[0]), str(self.center[1])],
-                                self.scale,
-                                self.map_type,
-                                pt=self.pt if self.pt else None)))
-
-    def search(self, request):
-        result = get_toponym(request)
-        if result:
-            self.show_address(result)
-            result = get_coordinates(result)
-            self.center = [float(result[0]), float(result[1])]
-            self.pt = self.center.copy()
-
-    def show_address(self, result):
-        self.address = result['metaDataProperty']['GeocoderMetaData']['text']
-        if 'postal_code' in result['metaDataProperty']['GeocoderMetaData']['Address']:
-            self.postal_code = result['metaDataProperty']['GeocoderMetaData']['Address']['postal_code']
-        else:
-            self.postal_code = ''
-
-
-class Label(pygame.sprite.Sprite):
-    def __init__(self, text_text, color, x, y, group=labels, angle=0, font_size=30):
-        super().__init__(group)
-        self.default(text_text, x, y, angle, font_size)
-        self.make_text(self.text, color, 'white')
-
-    def default(self, text_text, x, y, angle, font_size):
-        self.width, self.height = self.get_size(text_text, font_size)
-        if angle == 270:
-            self.rect = pygame.Rect(x, y, self.height, self.width)
-        else:
-            self.rect = pygame.Rect(x, y, self.width, self.height)
-        self.rect.x = x
-        self.rect.y = y
-        self.text = text_text.strip()
-
-    def get_size(self, text_text, font_size):
-        self.font = pygame.font.Font('font.ttf', font_size)
-        return pygame.font.Font.size(self.font, text_text)
-
-    def make_text(self, text, color, bg_color):
-        words = text.split()
-        space = self.font.size(' ')[0]
-        max_width = 200
-        screen.fill(pygame.Color(bg_color))
-        x, y = 0, 0
-        for word in words:
-            word_surface = self.font.render(word, 1, pygame.color.Color(color))
-            word_width, word_height = word_surface.get_size()
-            if x + word_width >= max_width:
-                x = 0
-                y += word_height
-            screen.blit(word_surface, (x, y))
-            x += word_width + space
-        self.image = screen.subsurface((0, 0, 200, y + 31)).copy()
-
-
-class Button(Label):
-    def __init__(self, text_text, color, x, y, bg_color='white', angle=0, font_size=30):
-        super().__init__(text_text, color, x, y, group=buttons)
-        self.default(text_text, x, y, angle, font_size)
-        self.p = False
-        self.static = self.make_image(text_text, color, bg_color, angle, self.width, self.height)
-        self.active = self.make_image(text_text, color, 'yellow', angle, self.width, self.height)
-        self.image = self.static
-
-    def make_image(self, text_text, color, bg_color, angle, but_width, but_height):
-        text = self.font.render("{}".format(text_text), 1, pygame.Color(color))
-        screen.fill(pygame.Color(bg_color))
-        screen.blit(text, (0, 0))
-        pygame.draw.rect(screen, pygame.color.Color(color), (0, 0, but_width, but_height), 1)
-        image = screen.subsurface((0, 0, but_width, but_height)).copy()
-        return pygame.transform.rotate(image, angle)
-
+from classes.button import Button
+from classes.labl import Label
+from classes.map import Map
 
 cur_map = Map()
 result = Label('', 'black', 10, 60)
 scheme = Button('  Схема  ', 'red', width - 50, height - 390, angle=270)
 sputnik = Button('  Спутник  ', 'blue', width - 50, height - 265, angle=270)
 hybrid = Button('  Гибрид  ', 'green', width - 50, height - 130, angle=270)
-search = Button('  Искать  ', 'black', width - 90, 5)
+search = Button('  Искать  ', 'black', width - 90, 5, )
 post = Button('  Почтовый индекс  ', 'black', width - 470, 50)
 
 cancel = Button('  Сброс поискового результата  ', 'black', width - 287, 50)
@@ -127,9 +39,8 @@ def make_action(button):
     if button == 'Искать':
         cur_map.search(text_input.get_text())
         search.image = search.active
-        result.make_text(cur_map.address + cur_map.postal_code, 'black', 'white')
+        result.make_text(cur_map.address, 'black', 'white')
     if button == 'Почтовый индекс':
-        print(post.p)
         if post.p:
             post.p = False
             result.make_text(cur_map.address, 'black', 'white')
@@ -152,6 +63,38 @@ def make_action(button):
         cur_map.pt = None
         cur_map.address = None
         cur_map.postal_code = ''
+        text_input.clear_text()
+
+
+def new_coor(pos):
+    pix_x = pos[0] - 650 / 2
+    pix_y = pos[1] - 50 - 450 / 2
+    x = cur_map.center[0] + pix_x * scale_x / 650
+    y = cur_map.center[1] - pix_y * scale_y / 450 * cos(radians(cur_map.center[1]))
+    cur_map.search(text_input.get_text())
+    cur_map.pt = [x, y]
+    top = get_toponym(str(x) + ',' + str(y))
+    if top:
+        cur_map.show_address(top)
+    if post.p:
+        result.make_text(cur_map.address, 'black', 'white')
+    else:
+        result.make_text(cur_map.address + ' ' + cur_map.postal_code, 'black', 'white')
+    cur_map.render()
+
+
+def check_coor():
+    if cur_map.center[0] > 180:
+        cur_map.center[0] -= 360
+    elif cur_map.center[0] < -180:
+        cur_map.center[0] += 360
+
+    if cur_map.center[1] >= 0:
+        if cur_map.center[1] > SCALES[cur_map.scale]:
+            cur_map.center[1] = SCALES[cur_map.scale]
+    else:
+        if cur_map.center[1] < -SCALES[cur_map.scale]:
+            cur_map.center[1] = -SCALES[cur_map.scale]
 
 
 while running:
@@ -159,7 +102,8 @@ while running:
     events = pygame.event.get()
 
     text_input.update(events)
-    scale = 0.1 ** (cur_map.scale // 4) * (17 - cur_map.scale + 3)
+    scale_x = 360 / (2 ** (cur_map.scale + 8)) * 650
+    scale_y = 360 / (2 ** (cur_map.scale + 8)) * 450
     for event in events:
         if event.type == pygame.QUIT:
             running = False
@@ -172,24 +116,29 @@ while running:
                 if cur_map.scale < 17:
                     cur_map.scale += 1
             elif event.key == pygame.K_DOWN:
-                cur_map.center[1] -= scale * cos(radians(cur_map.center[1]))
+                cur_map.center[1] -= scale_y * cos(radians(cur_map.center[1]))
             elif event.key == pygame.K_UP:
-                cur_map.center[1] += scale * cos(radians(cur_map.center[1]))
+                cur_map.center[1] += scale_y * cos(radians(cur_map.center[1]))
             elif event.key == pygame.K_LEFT:
-                cur_map.center[0] -= scale
+                cur_map.center[0] -= scale_x
             elif event.key == pygame.K_RIGHT:
-                cur_map.center[0] += scale
+                cur_map.center[0] += scale_x
             if event.key == pygame.K_KP_ENTER:
                 cur_map.search(text_input.get_text())
                 result.make_text(cur_map.address, 'black', 'white')
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
+                flag = False
                 for button in buttons:
                     if button.rect.collidepoint(*event.pos):
                         make_action(button.text)
+                        flag = True
                 pressed = True
                 start_pos = event.pos
+                if not flag and event.pos[0] < 650 and event.pos[1] > 50:
+                    new_coor(event.pos)
+
             if event.button == pygame.BUTTON_WHEELUP:
                 if cur_map.scale < 17:
                     cur_map.scale += 1
@@ -202,23 +151,12 @@ while running:
             cur_map.center[1] -= cos(radians(cur_map.center[1])) * 0.02 * 18 / 2 ** \
                                  (cur_map.scale - 2) * (start_pos[1] - event.pos[1])
             start_pos = event.pos
-
         if event.type == pygame.MOUSEBUTTONUP:
             pressed = False
             for button in buttons:
                 button.image = button.static
 
-    if cur_map.center[0] > 180:
-        cur_map.center[0] -= 360
-    elif cur_map.center[0] < -180:
-        cur_map.center[0] += 360
-
-    if cur_map.center[1] >= 0:
-        if cur_map.center[1] > SCALES[cur_map.scale]:
-            cur_map.center[1] = SCALES[cur_map.scale]
-    else:
-        if cur_map.center[1] < -SCALES[cur_map.scale]:
-            cur_map.center[1] = -SCALES[cur_map.scale]
+    check_coor()
 
     screen.fill(pygame.Color('white'))
     cur_map.render()

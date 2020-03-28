@@ -1,14 +1,13 @@
 import requests
 
 
-def get_organization(pos, search):
+def get_organization( search):
     geosearch_api_server = 'https://search-maps.yandex.ru/v1/'
     params = {
         'apikey': 'dda3ddba-c9ea-4ead-9010-f43fbc15c6e3',
-        'll': ','.join(pos),
         'text': search,
         'lang': 'ru_RU',
-        'type': 'biz'
+        'type': 'biz',
     }
     response = requests.get(geosearch_api_server, params=params)
     if not response:

@@ -103,10 +103,13 @@ def pix_to_rad(pos):
 
 def find_org(pos):
     x, y = pix_to_rad(pos)
-    org = get_organization((str(x), str(y)), text_input.get_text())
+    top = get_toponym(str(x) + ',' + str(y))
+    if top:
+        cur_map.show_address(top)
+    org = get_organization(cur_map.address)
     org_x, org_y = get_org_pos(org)
     distance = lonlat_distance((x, y), (org_x, org_y))
-    if distance <= 50:
+    if distance <= 500:
         cur_map.pt = [org_x, org_y]
         top = get_toponym(str(org_x) + ',' + str(org_y))
         if top:
@@ -160,7 +163,7 @@ while running:
                 if not flag and event.pos[0] < 650 and event.pos[1] > 50:
                     new_coor(event.pos)
             if event.button == pygame.BUTTON_RIGHT:
-                if event.pos[0] < 650 and event.pos[1] > 50 and text_input.get_text() != '':
+                if event.pos[0] < 650 and event.pos[1] > 50:
                     find_org(event.pos)
 
             if event.button == pygame.BUTTON_WHEELUP:
